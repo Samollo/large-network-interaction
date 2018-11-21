@@ -1,45 +1,44 @@
 import java.util.*;
 
-public class Graphe {
-    private int maxDegre;
+public class Graph {
+    private int maxDegree;
     private int minID;
     private int maxID;
 
-    private ArrayList<String> listOfAretes;
+    public ArrayList<String> edgesList;
     public String[] path;
 
-    Map<Integer, Sommet> nodes;
+    Map<Integer, Node> nodes;
 
-    public Graphe() {
+    public Graph() {
         nodes = new HashMap<>();
-        maxDegre = 0;
-        listOfAretes = new ArrayList<>();
-        nbOfXs = new ArrayList<>();
+        edgesList = new ArrayList<>();
+        maxDegree = 0;
     }
 
-    /*****Not oriented*****/
+    /***** Not oriented *****/
 
-    public boolean addLiaison(int idFirst, int idSecond) {
+    public boolean addEdge(int idFirst, int idSecond) {
         if (idFirst == idSecond) {
             return false;
         }
-        Sommet s1 = nodes.get(idFirst);
-        Sommet s2 = nodes.get(idSecond);
+        Node s1 = nodes.get(idFirst);
+        Node s2 = nodes.get(idSecond);
         if (s1 == null) {
-            s1 = new Sommet(idFirst);
+            s1 = new Node(idFirst);
             nodes.put(idFirst, s1);
         }
         if (s2 == null) {
-            s2 = new Sommet(idSecond);
+            s2 = new Node(idSecond);
             nodes.put(idSecond, s2);
         }
 
-        boolean resultProcess = s1.addVoisin(idSecond) && s2.addVoisin(idFirst);
+        boolean resultProcess = s1.addNeighbour(idSecond) && s2.addNeighbour(idFirst);
         if (resultProcess) {
-            updateDegre(s1.getDegre());
-            updateDegre(s2.getDegre());
-        } else {
+            updateDegree(s1.getDegree());
+            updateDegree(s2.getDegree());
         }
+
         if (idFirst > maxID) {
             maxID = idFirst;
         }
@@ -53,64 +52,85 @@ public class Graphe {
         if (idSecond < minID) {
             minID = idSecond;
         }
+
         return resultProcess;
     }
 
-    public boolean updateDegre(int n) {
-        if (n > maxDegre) {
-            maxDegre = n;
+    public boolean updateDegree(int n) {
+        if (n > maxDegree) {
+            maxDegree = n;
             return true;
         }
         return false;
     }
 
-    /********************Kleinberg************************/
+    /******************** Kleinberg ************************/
 
     public void kleinberg(int c, int origine_x, int origine_y, int cible_x, int cible_y) {
 
     }
 
-    /********************Watts-Strogatz************************/
+    /******************** Watts-Strogatz ************************/
 
-    public void embranchement(int n, int k, double p) {
+    public void fork(int n, int k, double p) {
         for (int i = 0; i < n; i++) {
-            // tire au hasard un sommet. Il ne doit pas etre deja voisin avec nodes[i]
-            int r = (int) (Math.random() * (n - 1));
-            while (nodes.get(i).getIdVoisins().contains(r)) {
+            // tire au hasard un Node. Il ne doit pas etre deja voisin avec nodes[i]
+            int r;
+            do {
                 r = (int) (Math.random() * (n - 1));
-            }
+            } while (nodes.get(i).getNeightboursId().contains(r));
+
             // tire au hasard pour voir si on effectue le branchement entre i et r ou non
             if (Math.random() < p) {
-                nodes.get(i).removeVoisin(k);
-                addLiaison(i, r);
+                nodes.get(i).removeNeightbour(k);
+                addEdge(i, r);
                 continue;
             }
-            listOfAretes.add(i + ";" + k);
         }
     }
 
     public void wattsStrogatz(int n, int k, double p, int origine, int cible) {
-        System.out.println("[INFO] n = " + n);
-        System.out.println("[INFO] k = " + k);
-        System.out.println("[INFO] p = " + p);
         for (int i = 0; i < n; i++) {
             for (int j = 1; j < k + 1; j++) {
-                addLiaison(i, (i + j) % n);
+                addEdge(i, (i + j) % n);
             }
         }
-        System.out.println("Avant rebranchement, Degre(max) = " + maxDegre);
 
         for (int i = 1; i < k + 1; i++) {
-            embranchement(n, i, p);
+            fork(n, i, p);
         }
+
+        pathWS(origine, cible, n);
     }
 
-    public int pathWS(int origine, int cible) {
-        if (origine == cible) {
-            return new String[]{0};
-        }
-        int current = origine;
-        
+    public int distWS(int x, int y, int n) {
+        int hi = Math.max(x, y);
+        int lo = Math.min(x, y);
+        return Math.min(hi - lo, Math.abs(hi - n - lo));
+    }
 
+    public void pathWS(int origine, int cible, int n) {
+        int current = origine;
+        int dist = 0;
+        while (current != cible) {
+            System.out.print(current + " ");
+            int shortestDist = n;
+            int nearestNode = -1;
+            for (int i = 0; i < nodes.get(current).getNeightboursId().size(); i++) {
+                int d = distWS(nodes.get(current).getNeightboursId().get(i), cible, n);
+                if (d < shortestDist) {
+                    shortestDist = d;
+                    nearestNode = nodes.get(current).getNeightboursId().get(i);
+                }
+            }
+            if (distWS(current, cible, n) < shortestDist) {
+                System.out.println("\nNous sommes dans une impasse. dist(current, target) < dist(voisins, target)");
+                return;
+            }
+            edgesList.add(current + ";" + nearestNode);
+            current = nearestNode;
+            dist += 1;
+        }
+        System.out.println("longueur du chemin: " + dist);
     }
 }

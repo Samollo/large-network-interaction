@@ -1,4 +1,5 @@
 import java.io.*;
+import java.util.ArrayList;
 
 public class TP4 {
 
@@ -23,8 +24,8 @@ public class TP4 {
                     cible = Integer.parseInt(args[6]);
                     graphe = new Graphe();
                     graphe.wattsStrogatz(n, k, p, origine, cible);
-                    writeToTxt(graphe.aretes, output);
-                    writeToDot(graphe.aretes, output);
+                    writeToTxt(graphe.edgesList, output);
+                    writeToDot(graphe.edgesList, output);
                     break;
                 case "K":
                     output = args[1];
@@ -35,8 +36,8 @@ public class TP4 {
                     cible_y = Integer.parseInt(args[6]);
                     graphe = new Graphe();
                     graphe.kleinberg(c, origine_x, origine_y, cible_x, cible_y);
-                    writeToTxt(graphe.aretes, output);
-                    writeToDot(graphe.aretes, output);
+                    writeToTxt(graphe.edgesList, output);
+                    writeToDot(graphe.edgesList, output);
                     break;
             }
         } catch (NullPointerException e) {
@@ -46,13 +47,13 @@ public class TP4 {
 
     }
 
-    public static void writeToTxt(String[] aretes, String output) {
+    public static void writeToTxt(ArrayList<String> aretes, String output) {
         PrintWriter writer = null;
         try {
             writer = new PrintWriter(output + ".txt", "UTF-8");
             writer.println("graph exemple {");
-            for (int i = 0; i < aretes.length; i++) {
-                String[] toWrite = aretes[i].split(";");
+            for (int i = 0; i < aretes.size(); i++) {
+                String[] toWrite = aretes.get(i).split(";");
                 writer.println(toWrite[0] + "\t" + toWrite[1]);
             }
             writer.println("}");
@@ -64,13 +65,13 @@ public class TP4 {
         }
     }
 
-    public static void writeToDot(String[] aretes, String output) {
+    public static void writeToDot(ArrayList<String> aretes, String output) {
         PrintWriter writer = null;
         try {
             writer = new PrintWriter(output + ".dot", "UTF-8");
             writer.println("graph exemple {");
-            for (int i = 0; i < aretes.length; i++) {
-                String[] toWrite = aretes[i].split(";");
+            for (int i = 0; i < aretes.size(); i++) {
+                String[] toWrite = aretes.get(i).split(";");
                 writer.println(toWrite[0] + " -- " + toWrite[1] + ";");
             }
             writer.println("}");
