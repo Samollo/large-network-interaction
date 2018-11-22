@@ -1,21 +1,17 @@
 import java.util.ArrayList;
-import java.util.HashSet;
+import java.util.List;
 
 public class Node implements Comparable<Node> {
     public int partialSum;
     public int distance;
     public int id;
-    public boolean deleted;
-    public int deletedNeighbour;
     public int[] coordinate;
-    private ArrayList<Integer> idNeighbours;
+    private List<Integer> idNeighbours;
 
     public Node(int id, int... xy) {
-        this.deletedNeighbour = 0;
         this.partialSum = 0;
         this.id = id;
         this.distance = 0;
-        this.deleted = false;
         this.idNeighbours = new ArrayList<>();
         this.coordinate = new int[2];
 
@@ -29,36 +25,30 @@ public class Node implements Comparable<Node> {
     }
 
     public int compareTo(Node o) {
-        return Integer.compare(this.idNeighbours.size(), o.getDegre());
+        return Integer.compare(this.idNeighbours.size(), o.getDegree());
     }
 
-    public int getDegre() {
+    public int getDegree() {
         return idNeighbours.size();
     }
 
-    public boolean addVoisin(int id) {
+    public boolean addNeighbour(int id) {
         if (idNeighbours.indexOf(id) != -1) {
             return false;
         }
-        idNeighboursSet.add(id);
         idNeighbours.add(id);
         return true;
     }
 
-    public int removeVoisin(int id) {
+    public int removeNeighbour(int id) {
         if (idNeighbours.indexOf(id) == -1) {
             return 0;
         }
-        idNeighboursSet.remove(id);
         return idNeighbours.remove(idNeighbours.indexOf(id));
     }
 
-    public ArrayList<Integer> getidNeighbours() {
+    public List<Integer> getIdNeighbours() {
         return idNeighbours;
-    }
-
-    public HashSet<Integer> getidNeighboursSet() {
-        return idNeighboursSet;
     }
 
 }

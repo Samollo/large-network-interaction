@@ -1,5 +1,7 @@
-import java.io.*;
-import java.util.ArrayList;
+import java.io.FileNotFoundException;
+import java.io.PrintWriter;
+import java.io.UnsupportedEncodingException;
+import java.util.List;
 
 public class TP4 {
 
@@ -9,7 +11,7 @@ public class TP4 {
             return;
         }
         try {
-            Graphe graphe;
+            Graph graphe;
             String output;
             int n, k, origine, cible, c, origine_x, origine_y, cible_x, cible_y;
             double p;
@@ -22,10 +24,10 @@ public class TP4 {
                     p = Double.parseDouble(args[4]);
                     origine = Integer.parseInt(args[5]);
                     cible = Integer.parseInt(args[6]);
-                    graphe = new Graphe();
+                    graphe = new Graph();
                     graphe.wattsStrogatz(n, k, p, origine, cible);
-                    writeToTxt(graphe.edgesList, output);
-                    writeToDot(graphe.edgesList, output);
+                    writeToTxt(graphe.getEdgesList(), output);
+                    writeToDot(graphe.getEdgesList(), output);
                     break;
                 case "K":
                     output = args[1];
@@ -34,10 +36,10 @@ public class TP4 {
                     origine_y = Integer.parseInt(args[4]);
                     cible_x = Integer.parseInt(args[5]);
                     cible_y = Integer.parseInt(args[6]);
-                    graphe = new Graphe();
+                    graphe = new Graph();
                     graphe.kleinberg(c, origine_x, origine_y, cible_x, cible_y);
-                    writeToTxt(graphe.edgesList, output);
-                    writeToDot(graphe.edgesList, output);
+                    writeToTxt(graphe.getEdgesList(), output);
+                    writeToDot(graphe.getEdgesList(), output);
                     break;
             }
         } catch (NullPointerException e) {
@@ -47,8 +49,8 @@ public class TP4 {
 
     }
 
-    public static void writeToTxt(ArrayList<String> aretes, String output) {
-        PrintWriter writer = null;
+    public static void writeToTxt(List<String> aretes, String output) {
+        PrintWriter writer;
         try {
             writer = new PrintWriter(output + ".txt", "UTF-8");
             writer.println("graph exemple {");
@@ -58,15 +60,13 @@ public class TP4 {
             }
             writer.println("}");
             writer.close();
-        } catch (FileNotFoundException e) {
-            e.printStackTrace();
-        } catch (UnsupportedEncodingException e) {
+        } catch (FileNotFoundException | UnsupportedEncodingException e) {
             e.printStackTrace();
         }
     }
 
-    public static void writeToDot(ArrayList<String> aretes, String output) {
-        PrintWriter writer = null;
+    public static void writeToDot(List<String> aretes, String output) {
+        PrintWriter writer;
         try {
             writer = new PrintWriter(output + ".dot", "UTF-8");
             writer.println("graph exemple {");
@@ -76,9 +76,7 @@ public class TP4 {
             }
             writer.println("}");
             writer.close();
-        } catch (FileNotFoundException e) {
-            e.printStackTrace();
-        } catch (UnsupportedEncodingException e) {
+        } catch (FileNotFoundException | UnsupportedEncodingException e) {
             e.printStackTrace();
         }
     }

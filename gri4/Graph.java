@@ -1,19 +1,26 @@
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 public class Graph {
     private int maxDegree;
     private int minID;
     private int maxID;
 
-    public ArrayList<String> edgesList;
-    public String[] path;
+    private List<String> edgesList;
+    private String[] path;
 
-    Map<Integer, Node> nodes;
+    private Map<Integer, Node> nodes;
 
     public Graph() {
         nodes = new HashMap<>();
         edgesList = new ArrayList<>();
         maxDegree = 0;
+    }
+
+    public List<String> getEdgesList() {
+        return edgesList;
     }
 
     /***** Not oriented *****/
@@ -78,13 +85,12 @@ public class Graph {
             int r;
             do {
                 r = (int) (Math.random() * (n - 1));
-            } while (nodes.get(i).getNeightboursId().contains(r));
+            } while (nodes.get(i).getIdNeighbours().contains(r));
 
             // tire au hasard pour voir si on effectue le branchement entre i et r ou non
             if (Math.random() < p) {
-                nodes.get(i).removeNeightbour(k);
+                nodes.get(i).removeNeighbour(k);
                 addEdge(i, r);
-                continue;
             }
         }
     }
@@ -116,21 +122,22 @@ public class Graph {
             System.out.print(current + " ");
             int shortestDist = n;
             int nearestNode = -1;
-            for (int i = 0; i < nodes.get(current).getNeightboursId().size(); i++) {
-                int d = distWS(nodes.get(current).getNeightboursId().get(i), cible, n);
+            for (int i = 0; i < nodes.get(current).getIdNeighbours().size(); i++) {
+                int d = distWS(nodes.get(current).getIdNeighbours().get(i), cible, n);
                 if (d < shortestDist) {
                     shortestDist = d;
-                    nearestNode = nodes.get(current).getNeightboursId().get(i);
+                    nearestNode = nodes.get(current).getIdNeighbours().get(i);
                 }
             }
             if (distWS(current, cible, n) < shortestDist) {
-                System.out.println("\nNous sommes dans une impasse. dist(current, target) < dist(voisins, target)");
+                System.out.println("Nous sommes dans une impasse. dist(current, target) < dist(voisins, target)");
                 return;
             }
             edgesList.add(current + ";" + nearestNode);
             current = nearestNode;
             dist += 1;
         }
+        System.out.print(current + " ");
         System.out.println("longueur du chemin: " + dist);
     }
 }
