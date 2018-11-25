@@ -3,6 +3,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.graalvm.compiler.graph.Node;
+
 public class Graph {
     private int maxDegree;
     private int minID;
@@ -12,11 +14,31 @@ public class Graph {
     private String[] path;
 
     private Map<Integer, Node> nodes;
+    private Map<String, Node> knodes;
+    private Node[] grid;
 
     public Graph() {
         nodes = new HashMap<>();
+        knodes = new HashMap<>();
         edgesList = new ArrayList<>();
         maxDegree = 0;
+    }
+
+    public Graph(int c) {
+        nodes = new HashMap<>();
+        knodes = new HashMap<>();
+        edgesList = new ArrayList<>();
+        maxDegree = 0;
+        grid = new Sommet[c*c];
+        int idx = 0;
+        for (int x = 0; i < c; i++) {
+            for(int y = 0; j < c; j++) {
+                grid[idx] = new Node(idx, x, y);
+                knodes.put(x+";"+y, grid[idx]);
+                nodes.put(idx, grid[idx]);
+                idx++;
+            }
+        }
     }
 
     public List<String> getEdgesList() {
@@ -73,8 +95,65 @@ public class Graph {
 
     /******************** Kleinberg ************************/
 
-    public void kleinberg(int c, int origine_x, int origine_y, int cible_x, int cible_y) {
+    public int eucliDist(Node a, Node b) {
+        return a.coordinate;
+    }
 
+    public void kleinberg(int origine_x, int origine_y, int cible_x, int cible_y) {
+        for (int x = 0; i < grid.length; i++) {
+            for (int y = 0; j < grid.length; j++) {
+                Node current = knodes.get(x+";"+y);
+                if (x == 0 && y == 0) {
+                    addEdge(current.id, knodes.get((x+1)+";"+y).id);
+                    addEdge(current.id, knodes.get(x+";"+(y+1)).id);
+                    continue;
+                }
+                if (x == 0 && y == grid.length - 1) {
+                    addEdge(current.id, knodes.get((x+1)+";"+y).id);
+                    addEdge(current.id, knodes.get(x+";"+(y-1)).id);
+                    continue;
+                }
+                if (x == grid.length - 1 && y == 0) {
+                    addEdge(current.id, knodes.get(x+";"+(y+1)).id);
+                    addEdge(current.id, knodes.get((x-1)+";"+y).id);
+                    continue;
+                }
+                if (x == grid.length - 1 && y == grid.length - 1) {
+                    addEdge(current.id, knodes.get(x+";"+(y-1)).id);
+                    addEdge(current.id, knodes.get((x-1)+";"+y).id);
+                    continue;
+                }
+                if (x == 0 && y > 0 && y < grid.length) {
+                    addEdge(current.id, knodes.get(x+";"+(y-1)).id);
+                    addEdge(current.id, knodes.get(x+";"+(y+1)).id);
+                    addEdge(current.id, knodes.get((x+1)+";"+y).id);
+                    continue;
+                }
+                if (y == 0 && x > 0 && x < grid.length) {
+                    addEdge(current.id, knodes.get((x-1)+";"+y).id);
+                    addEdge(current.id, knodes.get(x+";"+(y+1)).id);
+                    addEdge(current.id, knodes.get((x+1)+";"+y).id);
+                    continue;
+                }
+                if (x == grid.length && y > 0 && y < grid.length) {
+                    addEdge(current.id, knodes.get(x+";"+(y-1)).id);
+                    addEdge(current.id, knodes.get(x+";"+(y+1)).id);
+                    addEdge(current.id, knodes.get((x-1)+";"+y).id);
+                    continue;
+                }
+                if (y == grid.length && x > 0 && x < grid.length) {
+                    addEdge(current.id, knodes.get((x-1)+";"+y).id);
+                    addEdge(current.id, knodes.get(x+";"+(y-1)).id);
+                    addEdge(current.id, knodes.get((x+1)+";"+y).id);
+                    continue;
+                }
+                addEdge(current.id, knodes.get(x+";"+(y+1)).id);
+                addEdge(current.id, knodes.get(x+";"+(y-1)).id);
+                addEdge(current.id, knodes.get((x-1)+";"+y).id);
+                addEdge(current.id, knodes.get((x+1)+";"+y).id);
+            }
+        }
+        
     }
 
     /******************** Watts-Strogatz ************************/

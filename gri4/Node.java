@@ -7,6 +7,7 @@ public class Node implements Comparable<Node> {
     public int id;
     public int[] coordinate;
     private List<Integer> idNeighbours;
+    private static int idK = 0;
 
     public Node(int id, int... xy) {
         this.partialSum = 0;
@@ -23,7 +24,7 @@ public class Node implements Comparable<Node> {
             this.coordinate = xy;
         }
     }
-
+    
     public int compareTo(Node o) {
         return Integer.compare(this.idNeighbours.size(), o.getDegree());
     }
