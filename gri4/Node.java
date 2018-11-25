@@ -2,10 +2,10 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class Node implements Comparable<Node> {
-    public int partialSum;
+    public double partialSum;
     public int distance;
     public int id;
-    public int[] coordinate;
+    public int x, y;    
     private List<Integer> idNeighbours;
     private static int idK = 0;
 
@@ -14,14 +14,13 @@ public class Node implements Comparable<Node> {
         this.id = id;
         this.distance = 0;
         this.idNeighbours = new ArrayList<>();
-        this.coordinate = new int[2];
 
         if (xy.length == 0) {
-            this.coordinate = new int[2];
-            coordinate[0] = id;
-            coordinate[1] = id;
+            x = id;
+            y = id;
         } else {
-            this.coordinate = xy;
+            x = xy[0];
+            y = xy[1];
         }
     }
     
@@ -31,6 +30,19 @@ public class Node implements Comparable<Node> {
 
     public int getDegree() {
         return idNeighbours.size();
+    }
+
+    public String stringifyXY() {
+        return x+";"+y;
+    }
+
+    public String labelDotK() {
+        return id + " [ label=\"("+x+","+y+")\" ];";
+    }
+
+
+    public String dot() {
+        return id + " [ label =\"("+x+","+y+")\" ];";
     }
 
     public boolean addNeighbour(int id) {

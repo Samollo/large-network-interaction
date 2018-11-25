@@ -3,8 +3,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import org.graalvm.compiler.graph.Node;
-
 public class Graph {
     private int maxDegree;
     private int minID;
@@ -13,9 +11,10 @@ public class Graph {
     private List<String> edgesList;
     private String[] path;
 
-    private Map<Integer, Node> nodes;
+    public Map<Integer, Node> nodes;
     private Map<String, Node> knodes;
     private Node[] grid;
+    private int sizeSide;
 
     public Graph() {
         nodes = new HashMap<>();
@@ -29,16 +28,29 @@ public class Graph {
         knodes = new HashMap<>();
         edgesList = new ArrayList<>();
         maxDegree = 0;
-        grid = new Sommet[c*c];
+        sizeSide = c;
+        grid = new Node[c*c];
         int idx = 0;
-        for (int x = 0; i < c; i++) {
-            for(int y = 0; j < c; j++) {
+        for (int x = 0; x < c; x++) {
+            for(int y = 0; y < c; y++) {
                 grid[idx] = new Node(idx, x, y);
                 knodes.put(x+";"+y, grid[idx]);
                 nodes.put(idx, grid[idx]);
                 idx++;
             }
         }
+    }
+
+    public Node[] getGrid() {
+        return grid;
+    }
+
+    public Map<String, Node> getKnodes() {
+        return knodes;
+    }
+
+    public Map<Integer, Node> getNodes() {
+        return nodes;
     }
 
     public List<String> getEdgesList() {
@@ -95,70 +107,163 @@ public class Graph {
 
     /******************** Kleinberg ************************/
 
-    public int eucliDist(Node a, Node b) {
-        return a.coordinate;
+    public void kleinberg(int origine_x, int origine_y, int cible_x, int cible_y) {
+        kleinbergGraph();
+        pathK(origine_x, origine_y, cible_x, cible_y);
     }
 
-    public void kleinberg(int origine_x, int origine_y, int cible_x, int cible_y) {
-        for (int x = 0; i < grid.length; i++) {
-            for (int y = 0; j < grid.length; j++) {
+    private void kleinbergGraph(){
+        for (int x = 0; x < sizeSide; x++) {
+            for (int y = 0; y < sizeSide; y++) {
                 Node current = knodes.get(x+";"+y);
+                int b = lotery(current.id);
+
+                //Additional link
+                // we check if the lotery went fine
+                // and if the edge can be added to the list
+                if(b != -1 && addEdge(current.id, b)) {
+                    addToEdgesList(current, nodes.get(b));
+                }
+                //Top spots
                 if (x == 0 && y == 0) {
-                    addEdge(current.id, knodes.get((x+1)+";"+y).id);
-                    addEdge(current.id, knodes.get(x+";"+(y+1)).id);
+                    // If addEdge is a success, we add the edge to the list
+                    // It's a success only if the edge does not already exist
+                    // or if we're not trying to create a loop
+                    if(addEdge(current.id, knodes.get((x+1)+";"+y).id)) addToEdgesList(current, knodes.get((x+1)+";"+y));
+                    if(addEdge(current.id, knodes.get(x+";"+(y+1)).id)) addToEdgesList(current, knodes.get(x+";"+(y+1)));
                     continue;
                 }
-                if (x == 0 && y == grid.length - 1) {
-                    addEdge(current.id, knodes.get((x+1)+";"+y).id);
-                    addEdge(current.id, knodes.get(x+";"+(y-1)).id);
+                if (x == 0 && y == sizeSide - 1) {
+                    if(addEdge(current.id, knodes.get((x+1)+";"+y).id)) addToEdgesList(current, knodes.get((x+1)+";"+y));
+                    if(addEdge(current.id, knodes.get(x+";"+(y-1)).id)) addToEdgesList(current, knodes.get(x+";"+(y-1)));
                     continue;
                 }
-                if (x == grid.length - 1 && y == 0) {
-                    addEdge(current.id, knodes.get(x+";"+(y+1)).id);
-                    addEdge(current.id, knodes.get((x-1)+";"+y).id);
+                if (x == sizeSide - 1 && y == 0) {
+                    if(addEdge(current.id, knodes.get(x+";"+(y+1)).id)) addToEdgesList(current, knodes.get(x+";"+(y+1)));
+                    if(addEdge(current.id, knodes.get((x-1)+";"+y).id)) addToEdgesList(current, knodes.get((x-1)+";"+y));
                     continue;
                 }
-                if (x == grid.length - 1 && y == grid.length - 1) {
-                    addEdge(current.id, knodes.get(x+";"+(y-1)).id);
-                    addEdge(current.id, knodes.get((x-1)+";"+y).id);
+                if (x == sizeSide - 1 && y == sizeSide - 1) {
+                    if(addEdge(current.id, knodes.get(x+";"+(y-1)).id)) addToEdgesList(current, knodes.get(x+";"+(y-1)));
+                    if(addEdge(current.id, knodes.get((x-1)+";"+y).id)) addToEdgesList(current, knodes.get((x-1)+";"+y));
                     continue;
                 }
-                if (x == 0 && y > 0 && y < grid.length) {
-                    addEdge(current.id, knodes.get(x+";"+(y-1)).id);
-                    addEdge(current.id, knodes.get(x+";"+(y+1)).id);
-                    addEdge(current.id, knodes.get((x+1)+";"+y).id);
+                //Sides
+                if (x == 0 && y > 0 && y < sizeSide - 1) {
+                    if(addEdge(current.id, knodes.get(x+";"+(y-1)).id)) addToEdgesList(current, knodes.get(x+";"+(y-1)));
+                    if(addEdge(current.id, knodes.get(x+";"+(y+1)).id)) addToEdgesList(current, knodes.get(x+";"+(y+1)));
+                    if(addEdge(current.id, knodes.get((x+1)+";"+y).id)) addToEdgesList(current, knodes.get((x+1)+";"+y));
                     continue;
                 }
-                if (y == 0 && x > 0 && x < grid.length) {
-                    addEdge(current.id, knodes.get((x-1)+";"+y).id);
-                    addEdge(current.id, knodes.get(x+";"+(y+1)).id);
-                    addEdge(current.id, knodes.get((x+1)+";"+y).id);
+                if (y == 0 && x > 0 && x < sizeSide - 1) {
+                    if(addEdge(current.id, knodes.get((x-1)+";"+y).id)) addToEdgesList(current, knodes.get((x-1)+";"+y));
+                    if(addEdge(current.id, knodes.get(x+";"+(y+1)).id)) addToEdgesList(current, knodes.get(x+";"+(y+1)));
+                    if(addEdge(current.id, knodes.get((x+1)+";"+y).id)) addToEdgesList(current, knodes.get((x+1)+";"+y));
                     continue;
                 }
-                if (x == grid.length && y > 0 && y < grid.length) {
-                    addEdge(current.id, knodes.get(x+";"+(y-1)).id);
-                    addEdge(current.id, knodes.get(x+";"+(y+1)).id);
-                    addEdge(current.id, knodes.get((x-1)+";"+y).id);
+                if (x == sizeSide - 1 && y > 0 && y < sizeSide - 1) {
+                    if(addEdge(current.id, knodes.get(x+";"+(y-1)).id)) addToEdgesList(current, knodes.get(x+";"+(y-1)));
+                    if(addEdge(current.id, knodes.get(x+";"+(y+1)).id)) addToEdgesList(current, knodes.get(x+";"+(y+1)));
+                    if(addEdge(current.id, knodes.get((x-1)+";"+y).id)) addToEdgesList(current, knodes.get((x-1)+";"+y));
                     continue;
                 }
-                if (y == grid.length && x > 0 && x < grid.length) {
-                    addEdge(current.id, knodes.get((x-1)+";"+y).id);
-                    addEdge(current.id, knodes.get(x+";"+(y-1)).id);
-                    addEdge(current.id, knodes.get((x+1)+";"+y).id);
+                if (y == sizeSide - 1 && x > 0 && x < sizeSide - 1) {
+                    if(addEdge(current.id, knodes.get((x-1)+";"+y).id)) addToEdgesList(current, knodes.get((x-1)+";"+y));
+                    if(addEdge(current.id, knodes.get(x+";"+(y-1)).id)) addToEdgesList(current, knodes.get(x+";"+(y-1)));
+                    if(addEdge(current.id, knodes.get((x+1)+";"+y).id)) addToEdgesList(current, knodes.get((x+1)+";"+y));
                     continue;
                 }
-                addEdge(current.id, knodes.get(x+";"+(y+1)).id);
-                addEdge(current.id, knodes.get(x+";"+(y-1)).id);
-                addEdge(current.id, knodes.get((x-1)+";"+y).id);
-                addEdge(current.id, knodes.get((x+1)+";"+y).id);
+                //Inside nodes
+                if(addEdge(current.id, knodes.get(x+";"+(y+1)).id)) addToEdgesList(current, knodes.get(x+";"+(y+1)));
+                if(addEdge(current.id, knodes.get(x+";"+(y-1)).id)) addToEdgesList(current, knodes.get(x+";"+(y-1)));
+                if(addEdge(current.id, knodes.get((x-1)+";"+y).id)) addToEdgesList(current, knodes.get((x-1)+";"+y));
+                if(addEdge(current.id, knodes.get((x+1)+";"+y).id)) addToEdgesList(current, knodes.get((x+1)+";"+y));
             }
         }
-        
     }
 
+    private double eucliDist(Node a, Node b) {
+        return Math.sqrt((Math.pow(a.x-b.x, 2)) + (Math.pow(a.y-b.y, 2)));
+    }
+
+    private double sumOfKleinberg(int idA) {
+        double sum = 0;
+        for (int i = 0; i < grid.length; i++) {
+            if (i == idA) continue;
+            sum += 1/Math.pow(eucliDist(nodes.get(idA), nodes.get(i)), 2);
+        }
+        return sum;
+    }
+
+    private double chanceToLink(double sum, int idA, int idB) {
+        if (idA == idB) return 0;
+        return 1/(sum*Math.pow(eucliDist(nodes.get(idA), nodes.get(idB)), 2));
+    }
+
+    private double[] partialSum(int idA) {
+        double s = sumOfKleinberg(idA);
+        double[] partials = new double[grid.length];
+        partials[0] = chanceToLink(s, idA, 0);
+        for (int i = 1; i < partials.length; i++) {
+            partials[i] = partials[i-1] + chanceToLink(s, idA, i);
+        }
+        return partials;
+    }
+
+    private int lotery(int idA) {
+        double[] partials = partialSum(idA);
+        double p = Math.random();
+        for(int i = 1; i < grid.length; i++) {
+            if (i == idA) continue;
+            if (partials[i-1] < p && p <= partials[i]) return i;
+        }
+        return -1;
+
+    }
+
+    private boolean addToEdgesList(Node a, Node b) {
+        return edgesList.add(a.id+";"+b.id);
+    }
+
+    public double degreMoyen() {
+        double sum = 0;
+        for (int i = 0; i < grid.length; i++) {
+            sum += nodes.get(i).getDegree();
+        }
+        return sum/grid.length;
+    }
+
+    private void pathK(int origine_x, int origine_y, int cible_x, int cible_y) {
+        Node current = knodes.get(origine_x+";"+origine_y);
+        Node target = knodes.get(cible_x+";"+cible_y);
+        int dist = 0;
+
+        while (current.id != target.id) {
+            System.out.print(current.id + " " + "("+current.x+","+current.y+") ; ");
+            double shortestDist = grid.length;
+            int nearestNode = -1;
+            List<Integer> neighbour = current.getIdNeighbours();
+            for (int i = 0; i < neighbour.size(); i++) {
+                double d = eucliDist(target, nodes.get(neighbour.get(i)));
+                if (d < shortestDist) {
+                    shortestDist = d;
+                    nearestNode = neighbour.get(i);
+                }
+            }
+            if (eucliDist(current, target) < shortestDist) {
+                System.out.println("Nous sommes dans une impasse. dist(current, target) < dist(voisins, target)");
+                return;
+            }
+            current = nodes.get(nearestNode);
+            dist += 1;
+        }
+
+        System.out.print(current.id + " ");
+        System.out.println("longueur du chemin: " + dist);
+    }
     /******************** Watts-Strogatz ************************/
 
-    public void fork(int n, int k, double p) {
+    private void fork(int n, int k, double p) {
         for (int i = 0; i < n; i++) {
             // tire au hasard un Node. Il ne doit pas etre deja voisin avec nodes[i]
             int r;
@@ -168,9 +273,11 @@ public class Graph {
 
             // tire au hasard pour voir si on effectue le branchement entre i et r ou non
             if (Math.random() < p) {
-                nodes.get(i).removeNeighbour(k);
-                addEdge(i, r);
+                nodes.get(i).getIdNeighbours().remove(k);
+                addEdge(i, r); 
+                edgesList.add(i+";"+r);
             }
+            edgesList.add(i+";"+nodes.get(i).getIdNeighbours().get(k));
         }
     }
 
@@ -188,13 +295,13 @@ public class Graph {
         pathWS(origine, cible, n);
     }
 
-    public int distWS(int x, int y, int n) {
+    private int distWS(int x, int y, int n) {
         int hi = Math.max(x, y);
         int lo = Math.min(x, y);
         return Math.min(hi - lo, Math.abs(hi - n - lo));
     }
 
-    public void pathWS(int origine, int cible, int n) {
+    private void pathWS(int origine, int cible, int n) {
         int current = origine;
         int dist = 0;
         while (current != cible) {
@@ -212,7 +319,6 @@ public class Graph {
                 System.out.println("Nous sommes dans une impasse. dist(current, target) < dist(voisins, target)");
                 return;
             }
-            edgesList.add(current + ";" + nearestNode);
             current = nearestNode;
             dist += 1;
         }
