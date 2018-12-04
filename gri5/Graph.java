@@ -72,11 +72,13 @@ public class Graph {
             i++;
         }
 
-        modularity();
+        System.out.println(modularity());
     }
 
-    private void modularity() {
+    private float modularity() {
         float result = 0;
+
+        System.out.println(edgesList.size());
 
 
         for (int[] cluster : clusters) {
@@ -88,27 +90,32 @@ public class Graph {
 
             for (int i = 0; i < cluster.length; i++) {
 
-                for (int j = i; j < cluster.length; j++) {
+                for (int neighbour : nodes.get(cluster[i]).getIdNeighbours()) {
+                    if (!alreadyDone.contains(neighbour)) {
 
-                    for (int neighbour : nodes.get(cluster[i]).getIdNeighbours()) {
-                        if (!alreadyDone.contains(neighbour)) {
-                            alreadyDone.add(neighbour);
-                            eii++;
+                        for (int j = i; j < cluster.length; j++) {
+                            if (cluster[j] == neighbour) {
+                                eii++;
+                            }
                         }
-                    }
 
+                    }
                 }
+
+                alreadyDone.add(i);
 
                 aii += nodes.get(cluster[i]).getDegree();
 
             }
 
+
             eii = eii / edgesList.size();
-            aii = aii / 2 * edgesList.size();
+            aii = (aii * aii) / (4 * (edgesList.size() * edgesList.size()));
+
             result += (eii - aii);
         }
-        System.out.println(result);
 
+        return result;
     }
 
     @Override

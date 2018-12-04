@@ -7,7 +7,7 @@ public class TP5 {
         }
 
         Graph graph = new Graph(args[0]);
-        System.out.println(graph.toString());
+//        System.out.println(graph.toString());
     }
 
 }
