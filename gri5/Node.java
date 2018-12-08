@@ -1,20 +1,21 @@
+import java.util.HashSet;
 import java.util.LinkedList;
 
 public class Node {
     private int id;
+    private int cluster;
     private LinkedList<Integer> idNeighbours;
+    private HashSet<Integer> neighboursSet;
 
     public Node(int id) {
         this.id = id;
+        this.cluster = -1;
         this.idNeighbours = new LinkedList<>();
+        this.neighboursSet = new HashSet<>();
     }
 
     public int getId() {
         return id;
-    }
-
-    public void setId(int id) {
-        this.id = id;
     }
 
     public int getDegree() {
@@ -25,21 +26,26 @@ public class Node {
         return idNeighbours;
     }
 
-    public void setIdNeighbours(LinkedList<Integer> idNeighbours) {
-        this.idNeighbours = idNeighbours;
-    }
-
-    public boolean addNeighbour(int id) {
-        if (idNeighbours.indexOf(id) != -1) {
-            return false;
-        }
-        return idNeighbours.add(id);
-    }
-
-    public int removeNeighbour(int id) {
+    public void addNeighbour(int id) {
         if (idNeighbours.indexOf(id) == -1) {
-            return -1;
+            idNeighbours.add(id);
+            neighboursSet.add(id);
         }
-        return idNeighbours.remove(idNeighbours.indexOf(id));
+    }
+
+    public int getCluster() {
+        return cluster;
+    }
+
+    public void setCluster(int cluster) {
+        this.cluster = cluster;
+    }
+
+    public HashSet<Integer> getNeighboursSet() {
+        return neighboursSet;
+    }
+
+    public void setNeighboursSet(HashSet<Integer> neighboursSet) {
+        this.neighboursSet = neighboursSet;
     }
 }
