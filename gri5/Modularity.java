@@ -1,48 +1,36 @@
-import com.sun.tools.javac.util.Pair;
-
-public class Modularity implements Comparable<Modularity> {
+public class Modularity {
     private double value;
     private int left;
     private int right;
+    private int leftSize;
+    private int rightSize;
 
-    public Modularity(double mod, int left, int right) {
+    public Modularity(double mod, int left, int leftSize, int right, int rightSize) {
         this.value = mod;
         this.left = left;
         this.right = right;
+        this.leftSize = leftSize;
+        this.rightSize = rightSize;
     }
 
     public double getValue() {
         return value;
     }
 
-    public void setValue(double value) {
-        this.value = value;
-    }
-
     public int getLeft() {
         return left;
-    }
-
-    public void setLeft(int left) {
-        this.left = left;
     }
 
     public int getRight() {
         return right;
     }
 
-    public void setRight(int right) {
-        this.right = right;
+    public int getLeftSize() {
+        return leftSize;
     }
 
-    @Override
-    public int compareTo(Modularity o) {
-        if (value > o.getValue())
-            return -1;
-        if (value < o.getValue())
-            return 1;
-        else
-            return 0;
+    public int getRightSize() {
+        return rightSize;
     }
 
     @Override

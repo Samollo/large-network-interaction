@@ -1,20 +1,19 @@
-import javafx.util.Pair;
-
 import java.io.BufferedReader;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
+import java.text.DecimalFormat;
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.Map;
 import java.util.PriorityQueue;
 
 public class Graph {
     private ArrayList<String> edgesList;
     private HashMap<Integer, Node> nodes;
-    private HashMap<String, Integer> clustersEdgesMap;
+    private HashMap<String, Double> clustersEdgesMap;
     private HashMap<Integer, Cluster> clusters;
-    private Double modularity = null;
+    private PriorityQueue<Modularity> modularities;
+    private double bestModularity = -1.0;
     private int step = 1;
 
     public Graph(String path) {
@@ -38,7 +37,9 @@ public class Graph {
         n2.addNeighbour(idFirst);
 
         edgesList.add(idFirst + ";" + idSecond);
-        clustersEdgesMap.put(idFirst + ";" + idSecond, 1);
+        clustersEdgesMap.put(idFirst + ";" + idSecond, 1.0);
+        clustersEdgesMap.put(idSecond + ";" + idFirst, 1.0);
+
     }
 
     private Node putNode(int idNode) {
@@ -46,9 +47,8 @@ public class Graph {
 
         if (element == null) {
             element = new Node(idNode);
-            element.setCluster(idNode);
             nodes.put(element.getId(), element);
-            clusters.put(element.getId(), new Cluster(element));
+            clusters.put(element.getId(), new Cluster(idNode, nodes));
         }
         return element;
     }
@@ -60,7 +60,8 @@ public class Graph {
             String line;
 
             while ((line = br.readLine()) != null) {
-                addEdge(Integer.parseInt(line.split("\\s")[0]), Integer.parseInt(line.split("\\s")[1]));
+                if (line.charAt(0) != '#')
+                    addEdge(Integer.parseInt(line.split("\\s")[0]), Integer.parseInt(line.split("\\s")[1]));
             }
         } catch (FileNotFoundException e) {
             System.out.println("Error: file not found.");
@@ -70,44 +71,98 @@ public class Graph {
     }
 
     private void clustering() {
-        Double calculatedModularity;
+        modularities = new PriorityQueue<>(new ModularityComparator());
         int leftClus = -1;
         int rightClus = -1;
-        Double bestM;
+        double modularity = 1.0;
 
-        while (clusters.size() > 0) {
+        DecimalFormat f = new DecimalFormat();
+        f.setMaximumFractionDigits(10000);
+
+
+        while (modularity != 0) {
             if (step == 1) {
                 modularity = firstStepModularity();
             } else {
-                bestM = (double) -10000;
-                for (Cluster c1 : clusters.values()) {
-                    for (Cluster c2 : clusters.values()) {
-                        calculatedModularity = modularityCalcul(c1, c2);
-                        if (calculatedModularity != null) {
-                            if (bestM <= calculatedModularity) {
-                                bestM = calculatedModularity;
-                                leftClus = c1.getClusterId();
-                                rightClus = c2.getClusterId();
-                            }
-                        }
+                if (leftClus == -1) {
+                    for (Cluster c1 : clusters.values()) {
+                        calculIncrementForAll(c1);
                     }
+                } else {
+                    Cluster c1 = clusters.get(leftClus);
+                    calculIncrementForAll(c1);
                 }
-                modularity = bestM + modularity;
+
+                boolean isOK;
+                Modularity bestCouple;
+
+                do {
+                    isOK = true;
+
+                    bestCouple = modularities.poll();
+                    leftClus = bestCouple.getLeft();
+                    rightClus = bestCouple.getRight();
+
+                    if (!clusters.containsKey(leftClus)) {
+                        isOK = false;
+                        continue;
+                    }
+                    if (!clusters.containsKey(rightClus)) {
+                        isOK = false;
+                        continue;
+                    }
+                    if (clusters.get(leftClus).getNodesList().size() != bestCouple.getLeftSize()) {
+                        isOK = false;
+                        continue;
+                    }
+                    if (clusters.get(rightClus).getNodesList().size() != bestCouple.getRightSize()) {
+                        isOK = false;
+                    }
+                } while (!isOK);
+                modularity = bestCouple.getValue() + modularity;
                 updateClusterEdges(leftClus, rightClus);
             }
 
-            System.out.println("étape=" + step + " nbClusters=" + clusters.size() + " Q(P)=" + modularity);
+
+            if (roundAvoid(modularity, 5) == 0.0)
+                modularity = 0.0;
+
+            bestModularity = bestModularity < modularity ? modularity : bestModularity;
+
+
+            System.out.println("étape=" + step + " nbClusters=" + clusters.size() + " Q(P)=" + modularity + " mémoire : " +
+                    (Runtime.getRuntime().totalMemory() - Runtime.getRuntime().freeMemory()) + "octets");
+            String clustersString = clusters.values().toString();
+            clustersString = clustersString.replaceAll(",", "");
+            clustersString = clustersString.substring(1, clustersString.length() - 1);
+            System.out.println(clustersString);
             step++;
+        }
+
+        System.out.println("Meilleure modularité : " + bestModularity);
+    }
+
+    private void calculIncrementForAll(Cluster c1) {
+        Modularity m;
+        for (Cluster c2 : clusters.values()) {
+            if (c1.getClusterId() == c2.getClusterId()) {
+                continue;
+            }
+            m = new Modularity(modularityCalcul(c1, c2), c1.getClusterId(), c1.getNodesList().size(), c2.getClusterId(), c2.getNodesList().size());
+            modularities.add(m);
         }
     }
 
+    public double roundAvoid(double value, int places) {
+        double scale = Math.pow(10, places);
+        return Math.round(value * scale) / scale;
+    }
 
     private void updateClusterEdges(int i, int j) {
-        HashMap<String, Integer> hashMap = new HashMap<>();
+        HashMap<String, Double> hashMap = new HashMap<>();
 
         clustersEdgesMap.remove(i + ";" + j);
         clustersEdgesMap.remove(j + ";" + i);
-
 
         for (String edge : clustersEdgesMap.keySet()) {
             String[] edgeSplitted = edge.split(";");
@@ -115,30 +170,29 @@ public class Graph {
             int nodeTwo = Integer.parseInt(edgeSplitted[1]);
 
             if (nodeOne == j) {
-                if (hashMap.containsKey(i + ";" + nodeTwo)) {
-                    hashMap.replace(i + ";" + nodeTwo, hashMap.get(i + ";" + nodeTwo) + 1);
-                } else {
-                    hashMap.put(i + ";" + nodeTwo, 1);
-                }
+                replaceOldClustersEdges(i, hashMap, nodeTwo);
             } else if (nodeTwo == j) {
-                if (hashMap.containsKey(nodeOne + ";" + i)) {
-                    hashMap.replace(nodeOne + ";" + i, hashMap.get(nodeOne + ";" + i) + 1);
-                } else {
-                    hashMap.put(nodeOne + ";" + i, 1);
-                }
+                replaceOldClustersEdges(nodeOne, hashMap, i);
             } else {
                 if (hashMap.containsKey(edge)) {
-                    hashMap.replace(edge, clustersEdgesMap.get(edge) + 1);
+                    hashMap.replace(edge, clustersEdgesMap.get(edge) + 1.0);
                 } else {
                     hashMap.put(edge, clustersEdgesMap.get(edge));
                 }
             }
         }
         clustersEdgesMap = hashMap;
-        System.out.println(i + " " + j + " " + clusters.size());
         if (i != j) {
             clusters.get(i).mergeCluster(clusters.get(j));
             clusters.remove(j);
+        }
+    }
+
+    private void replaceOldClustersEdges(int i, HashMap<String, Double> hashMap, int nodeTwo) {
+        if (hashMap.containsKey(i + ";" + nodeTwo)) {
+            hashMap.replace(i + ";" + nodeTwo, hashMap.get(i + ";" + nodeTwo) + 1);
+        } else {
+            hashMap.put(i + ";" + nodeTwo, 1.0);
         }
     }
 
@@ -153,11 +207,13 @@ public class Graph {
     }
 
     public Double modularityCalcul(Cluster i, Cluster j) {
+        Double mij;
 
         if (i.getClusterId() == j.getClusterId()) {
-            return null;
+            mij = i.getInternEdges();
+        } else {
+            mij = getClustersEdges(i.getClusterId(), j.getClusterId());
         }
-        Integer mij = getClustersEdges(i.getClusterId(), j.getClusterId());
 
         double one = mij / ((double) edgesList.size());
         double two = Math.pow((clusters.get(i.getClusterId()).getTotalDegree() + clusters.get(j.getClusterId()).getTotalDegree()), 2) / (4 * Math.pow((double) edgesList.size(), 2));
@@ -167,8 +223,8 @@ public class Graph {
         return one - two + three + four;
     }
 
-    private Integer getClustersEdges(int i, int j) {
-        return clustersEdgesMap.get(i + ";" + j) == null ? 0 : clustersEdgesMap.get(i + ";" + j);
+    private Double getClustersEdges(int i, int j) {
+        return clustersEdgesMap.get(i + ";" + j) == null ? 0.0 : clustersEdgesMap.get(i + ";" + j);
     }
 
 

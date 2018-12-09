@@ -1,82 +1,67 @@
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.Map;
 
 public class Cluster {
-    private HashMap<Integer, Node> nodesList;
-    private float internEdges;
-    private float totalDegree;
+    private HashSet<Integer> nodesList;
+    private HashMap<Integer, Node> nodesMap;
+    private double internEdges;
+    private double totalDegree;
     private int clusterId;
 
-    public Cluster() {
+    public Cluster(int n, HashMap<Integer, Node> nodes) {
 
-        nodesList = new HashMap<>();
-        internEdges = 0;
+        nodesList = new HashSet<>();
         totalDegree = -1;
+        nodesList.add(n);
+        clusterId = n;
+        nodesMap = nodes;
 
     }
 
-    public Cluster(Node n) {
-
-        nodesList = new HashMap<>();
-        internEdges = 0;
-        totalDegree = -1;
-        nodesList.put(n.getId(), n);
-        clusterId = n.getId();
-
-    }
-
-    public void addNode(Node node) {
-
-        nodesList.put(node.getId(), node);
-        totalDegree += node.getDegree();
+    public void addNode(int node) {
+        Node n = nodesMap.get(node);
+        nodesList.add(node);
+        totalDegree += n.getDegree();
+        for (int neighbour : n.getIdNeighbours()) {
+            if (nodesList.contains(neighbour)) {
+                internEdges++;
+            }
+        }
 
     }
 
     public void mergeCluster(Cluster cluster) {
 
-        for (Node n : cluster.getNodesList().values()) {
+        for (int n : cluster.getNodesList()) {
             addNode(n);
         }
 
     }
 
-    public HashMap<Integer, Node> getNodesList() {
+    public HashSet<Integer> getNodesList() {
         return nodesList;
     }
 
-    public void setNodesList(HashMap<Integer, Node> nodesList) {
-        this.nodesList = nodesList;
-    }
-
-
-    public float getInternEdges() {
+    public double getInternEdges() {
         return internEdges;
     }
 
-    public void setInternEdges(float internEdges) {
-        this.internEdges = internEdges;
-    }
-
-    public float getTotalDegree() {
+    public double getTotalDegree() {
         if (totalDegree == -1) {
             totalDegree = 0;
-            for (Node n : nodesList.values()) {
-                totalDegree += n.getDegree();
+            for (int n : nodesList) {
+                totalDegree += nodesMap.get(n).getDegree();
             }
         }
         return totalDegree;
-    }
-
-    public void setTotalDegree(float totalDegree) {
-        this.totalDegree = totalDegree;
     }
 
     public int getClusterId() {
         return clusterId;
     }
 
-    public void setClusterId(int clusterId) {
-        this.clusterId = clusterId;
+    @Override
+    public String toString() {
+        return nodesList.toString();
     }
 }
