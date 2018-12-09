@@ -1,3 +1,5 @@
+import javafx.util.Pair;
+
 import java.io.BufferedReader;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
@@ -5,14 +7,15 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.PriorityQueue;
 
 public class Graph {
     private ArrayList<String> edgesList;
     private HashMap<Integer, Node> nodes;
     private HashMap<String, Integer> clustersEdgesMap;
     private HashMap<Integer, Cluster> clusters;
-    private int clusterNumber = 1;
     private Double modularity = null;
+    private int step = 1;
 
     public Graph(String path) {
         nodes = new HashMap<>();
@@ -35,6 +38,7 @@ public class Graph {
         n2.addNeighbour(idFirst);
 
         edgesList.add(idFirst + ";" + idSecond);
+        clustersEdgesMap.put(idFirst + ";" + idSecond, 1);
     }
 
     private Node putNode(int idNode) {
@@ -45,7 +49,6 @@ public class Graph {
             element.setCluster(idNode);
             nodes.put(element.getId(), element);
             clusters.put(element.getId(), new Cluster(element));
-            clusterNumber++;
         }
         return element;
     }
@@ -67,160 +70,105 @@ public class Graph {
     }
 
     private void clustering() {
-//        mergeCluster();
-        mijCalcul();
-        System.out.println(clustersEdgesMap.toString());
-        System.out.println(modularityCalcul());
-        System.out.println(modularityCalcul());
+        Double calculatedModularity;
+        int leftClus = -1;
+        int rightClus = -1;
+        Double bestM;
 
-    }
-
-    /*
-        private void mergeCluster() {
-            HashSet<Integer> alreadyDone = new HashSet<>();
-            HashMap<Float, Pair<Integer, Integer>> modularityMap;
-            PriorityQueue<Float> modularityQueue;
-            float bestModularity = -1;
-            int step = 1;
-
-            while (step < 10) {
-
-                modularityMap = new HashMap<>();
-                modularityQueue = new PriorityQueue<>();
-
-                if (step == 1) {
-                    modularityQueue.add(modularity(null));
-                } else {
-                    for (int i = 0; i < clusters.size(); i++) {
-                        if (alreadyDone.contains(i)) {
-                            continue;
-                        }
-                        for (int j = i + 1; j < clusters.size(); j++) {
-                            if (alreadyDone.contains(i)) {
-                                continue;
+        while (clusters.size() > 0) {
+            if (step == 1) {
+                modularity = firstStepModularity();
+            } else {
+                bestM = (double) -10000;
+                for (Cluster c1 : clusters.values()) {
+                    for (Cluster c2 : clusters.values()) {
+                        calculatedModularity = modularityCalcul(c1, c2);
+                        if (calculatedModularity != null) {
+                            if (bestM <= calculatedModularity) {
+                                bestM = calculatedModularity;
+                                leftClus = c1.getClusterId();
+                                rightClus = c2.getClusterId();
                             }
-                            Pair<Integer, Integer> pair = new Pair<>(i, j);
-                            modularityQueue.add(modularity(pair));
-                            modularityMap.putIfAbsent(modularityQueue.peek(), pair);
                         }
                     }
-
-                    Pair<Integer, Integer> bestPair = modularityMap.get(modularityQueue.peek());
-                    System.out.println(bestPair.toString());
-                    clusters.get(bestPair.fst).mergeCluster(clusters.get(bestPair.snd));
-                    alreadyDone.add(bestPair.snd);
                 }
-
-                bestModularity = modularityQueue.peek() > bestModularity ? modularityQueue.peek() : bestModularity;
-
-                System.out.println("étape=" + step + " nbClusters=" + clusterNumber +
-                        " Q(P)=" + modularityQueue.peek() + " mémoire = " +
-                        (Runtime.getRuntime().totalMemory() - Runtime.getRuntime().freeMemory()) + "octets.");
-
-                step++;
-
-                if (modularityQueue.poll() == 0) {
-                    break;
-                }
+                modularity = bestM + modularity;
+                updateClusterEdges(leftClus, rightClus);
             }
 
-            System.out.println("Best modularity : " + bestModularity);
+            System.out.println("étape=" + step + " nbClusters=" + clusters.size() + " Q(P)=" + modularity);
+            step++;
         }
-    */
-/*
-    private float modularity(Pair<Integer, Integer> merge) {
-        float result = 0;
-
-        int compt = 0;
-        for (Cluster cluster : clusters) {
-            float eii;
-            float aii;
-
-            if (merge != null && compt == merge.fst) {
-                Cluster copy = (Cluster) cluster.clone();
-                copy.mergeCluster(clusters.get(merge.snd));
-
-                eii = copy.getInternEdges() / edgesList.size();
-                aii = (copy.getTotalDegree() * copy.getTotalDegree()) / (4 * (edgesList.size() * edgesList.size()));
-            } else if (merge != null && compt == merge.snd) {
-                compt++;
-                continue;
-            } else {
-                eii = cluster.getInternEdges() / edgesList.size();
-                aii = (cluster.getTotalDegree() * cluster.getTotalDegree()) / (4 * (edgesList.size() * edgesList.size()));
-            }
-
-            result += (eii - aii);
-            compt++;
-        }
-
-        return result;
     }
-*/
-    private void mijCalcul() {
-        clustersEdgesMap = new HashMap<>();
-        for (String edge : edgesList) {
+
+
+    private void updateClusterEdges(int i, int j) {
+        HashMap<String, Integer> hashMap = new HashMap<>();
+
+        clustersEdgesMap.remove(i + ";" + j);
+        clustersEdgesMap.remove(j + ";" + i);
+
+
+        for (String edge : clustersEdgesMap.keySet()) {
             String[] edgeSplitted = edge.split(";");
             int nodeOne = Integer.parseInt(edgeSplitted[0]);
             int nodeTwo = Integer.parseInt(edgeSplitted[1]);
 
-            if (nodes.get(nodeOne).getCluster() != nodes.get(nodeTwo).getCluster()) {
-                String clusterEdge = nodes.get(nodeOne).getCluster() + ";" + nodes.get(nodeTwo).getCluster();
-                if (clustersEdgesMap.containsKey(clusterEdge)) {
-                    clustersEdgesMap.replace(clusterEdge, clustersEdgesMap.get(clusterEdge) + 1);
+            if (nodeOne == j) {
+                if (hashMap.containsKey(i + ";" + nodeTwo)) {
+                    hashMap.replace(i + ";" + nodeTwo, hashMap.get(i + ";" + nodeTwo) + 1);
                 } else {
-                    clustersEdgesMap.put(clusterEdge, 1);
+                    hashMap.put(i + ";" + nodeTwo, 1);
                 }
-
-            }
-        }
-    }
-
-    private int mijCalcul(int i, int j) {
-        int mij = 0;
-        for (Map.Entry<String, Integer> edge : clustersEdgesMap.entrySet()) {
-            String[] edgeSplitted = edge.getKey().split(";");
-            int nodeOne = Integer.parseInt(edgeSplitted[0]);
-            int nodeTwo = Integer.parseInt(edgeSplitted[1]);
-
-            if (nodeOne == i || nodeTwo == i || nodeOne == j || nodeTwo == j) {
-                mij += edge.getValue();
-            }
-        }
-        return mij;
-    }
-
-    private Double modularityCalcul() {
-        if (modularity == null) {
-            modularity = 0.0;
-
-            for (Cluster c : clusters.values()) {
-                modularity -= (Math.pow(c.getTotalDegree(), 2) / (4 * Math.pow(edgesList.size(), 2)));
-            }
-
-            return modularity;
-        } else {
-            double modularityDiff;
-
-            for (Map.Entry<Integer, Cluster> map : clusters.entrySet()) {
-                for (int i = map.getKey(); i < clusters.size(); i++) {
-                    int mij = mijCalcul(map.getKey(), i);
-                    System.out.println(map.getKey() + " " + i + " " + mij);
-
-                    double one = ((double) mij) / ((double) edgesList.size());
-                    double two = Math.pow((map.getValue().getTotalDegree() + clusters.get(i).getTotalDegree()), 2) / ((double)4 * Math.pow(edgesList.size(), 2));
-                    double three = Math.pow(map.getValue().getTotalDegree(), 2) / ((double)4 * Math.pow(edgesList.size(), 2));
-                    double four = Math.pow(clusters.get(i).getTotalDegree(), 2) / ((double)4 * Math.pow(edgesList.size(), 2));
-
-
-                    modularityDiff = one - two + three + four;
-
-                    System.out.println(modularityDiff + modularity);
-
+            } else if (nodeTwo == j) {
+                if (hashMap.containsKey(nodeOne + ";" + i)) {
+                    hashMap.replace(nodeOne + ";" + i, hashMap.get(nodeOne + ";" + i) + 1);
+                } else {
+                    hashMap.put(nodeOne + ";" + i, 1);
+                }
+            } else {
+                if (hashMap.containsKey(edge)) {
+                    hashMap.replace(edge, clustersEdgesMap.get(edge) + 1);
+                } else {
+                    hashMap.put(edge, clustersEdgesMap.get(edge));
                 }
             }
         }
-        return null;
+        clustersEdgesMap = hashMap;
+        System.out.println(i + " " + j + " " + clusters.size());
+        if (i != j) {
+            clusters.get(i).mergeCluster(clusters.get(j));
+            clusters.remove(j);
+        }
+    }
+
+    public double firstStepModularity() {
+        double firstStep = 0.0;
+
+        for (Cluster c : clusters.values()) {
+            firstStep -= (Math.pow(c.getTotalDegree(), 2) / (4 * Math.pow((double) edgesList.size(), 2)));
+        }
+
+        return firstStep;
+    }
+
+    public Double modularityCalcul(Cluster i, Cluster j) {
+
+        if (i.getClusterId() == j.getClusterId()) {
+            return null;
+        }
+        Integer mij = getClustersEdges(i.getClusterId(), j.getClusterId());
+
+        double one = mij / ((double) edgesList.size());
+        double two = Math.pow((clusters.get(i.getClusterId()).getTotalDegree() + clusters.get(j.getClusterId()).getTotalDegree()), 2) / (4 * Math.pow((double) edgesList.size(), 2));
+        double three = Math.pow(clusters.get(i.getClusterId()).getTotalDegree(), 2) / (4 * Math.pow((double) edgesList.size(), 2));
+        double four = Math.pow(clusters.get(j.getClusterId()).getTotalDegree(), 2) / (4 * Math.pow((double) edgesList.size(), 2));
+
+        return one - two + three + four;
+    }
+
+    private Integer getClustersEdges(int i, int j) {
+        return clustersEdgesMap.get(i + ";" + j) == null ? 0 : clustersEdgesMap.get(i + ";" + j);
     }
 
 

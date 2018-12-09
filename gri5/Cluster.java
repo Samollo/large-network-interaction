@@ -2,7 +2,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 
-public class Cluster implements Cloneable {
+public class Cluster {
     private HashMap<Integer, Node> nodesList;
     private float internEdges;
     private float totalDegree;
@@ -13,14 +13,6 @@ public class Cluster implements Cloneable {
         nodesList = new HashMap<>();
         internEdges = 0;
         totalDegree = -1;
-
-    }
-
-    public Cluster(HashMap<Integer, Node> nl, float ie, float td) {
-
-        nodesList = (HashMap<Integer, Node>) nl.clone();
-        internEdges = ie;
-        totalDegree = td;
 
     }
 
@@ -38,7 +30,6 @@ public class Cluster implements Cloneable {
 
         nodesList.put(node.getId(), node);
         totalDegree += node.getDegree();
-        int i = 0;
 
     }
 
@@ -58,10 +49,6 @@ public class Cluster implements Cloneable {
         this.nodesList = nodesList;
     }
 
-    @Override
-    protected Object clone() {
-        return new Cluster(this.nodesList, this.internEdges, this.totalDegree);
-    }
 
     public float getInternEdges() {
         return internEdges;
