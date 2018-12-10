@@ -80,7 +80,7 @@ public class Graph {
         f.setMaximumFractionDigits(10000);
 
 
-        while (modularity != 0) {
+        while (clusters.size() > 1) {
             if (step == 1) {
                 modularity = firstStepModularity();
             } else {
