@@ -8,7 +8,7 @@ import java.util.HashMap;
 import java.util.PriorityQueue;
 
 public class Graph {
-    private ArrayList<String> edgesList;
+    private int edge;
     private HashMap<Integer, Node> nodes;
     private HashMap<String, Double> clustersEdgesMap;
     private HashMap<Integer, Cluster> clusters;
@@ -18,7 +18,7 @@ public class Graph {
 
     public Graph(String path) {
         nodes = new HashMap<>();
-        edgesList = new ArrayList<>();
+        edge = 0;
         clusters = new HashMap<>();
         clustersEdgesMap = new HashMap<>();
         graphFileParsing(path);
@@ -36,7 +36,7 @@ public class Graph {
         Node n2 = putNode(idSecond);
         n2.addNeighbour(idFirst);
 
-        edgesList.add(idFirst + ";" + idSecond);
+        edge++;
         clustersEdgesMap.put(idFirst + ";" + idSecond, 1.0);
         clustersEdgesMap.put(idSecond + ";" + idFirst, 1.0);
 
@@ -93,32 +93,10 @@ public class Graph {
                     calculIncrementForAll(c1);
                 }
 
-                boolean isOK;
-                Modularity bestCouple;
+                Modularity bestCouple = depop();
+                leftClus = bestCouple.getLeft();
+                rightClus = bestCouple.getRight();
 
-                do {
-                    isOK = true;
-
-                    bestCouple = modularities.poll();
-                    leftClus = bestCouple.getLeft();
-                    rightClus = bestCouple.getRight();
-
-                    if (!clusters.containsKey(leftClus)) {
-                        isOK = false;
-                        continue;
-                    }
-                    if (!clusters.containsKey(rightClus)) {
-                        isOK = false;
-                        continue;
-                    }
-                    if (clusters.get(leftClus).getNodesList().size() != bestCouple.getLeftSize()) {
-                        isOK = false;
-                        continue;
-                    }
-                    if (clusters.get(rightClus).getNodesList().size() != bestCouple.getRightSize()) {
-                        isOK = false;
-                    }
-                } while (!isOK);
                 modularity = bestCouple.getValue() + modularity;
                 updateClusterEdges(leftClus, rightClus);
             }
@@ -142,15 +120,57 @@ public class Graph {
         System.out.println("Meilleure modularité : " + bestModularity);
     }
 
+    private Modularity depop() {
+        boolean isOK;
+        Modularity bestCouple;
+
+        do {
+            isOK = true;
+
+            bestCouple = modularities.poll();
+            int leftClus = bestCouple.getLeft();
+            int rightClus = bestCouple.getRight();
+
+            if (!clusters.containsKey(leftClus)) {
+                isOK = false;
+                continue;
+            }
+            if (!clusters.containsKey(rightClus)) {
+                isOK = false;
+                continue;
+            }
+            if (clusters.get(leftClus).getNodesList().size() != bestCouple.getLeftSize()) {
+                isOK = false;
+                continue;
+            }
+            if (clusters.get(rightClus).getNodesList().size() != bestCouple.getRightSize()) {
+                isOK = false;
+            }
+        } while (!isOK);
+
+        return bestCouple;
+    }
+
+
     private void calculIncrementForAll(Cluster c1) {
         Modularity m;
+        double mCalcul = -2;
+        int cl = 0;
+        int cr = 0;
         for (Cluster c2 : clusters.values()) {
             if (c1.getClusterId() == c2.getClusterId()) {
                 continue;
             }
-            m = new Modularity(modularityCalcul(c1, c2), c1.getClusterId(), c1.getNodesList().size(), c2.getClusterId(), c2.getNodesList().size());
-            modularities.add(m);
+            double tmp = modularityCalcul(c1, c2);
+            if (tmp > mCalcul) {
+                mCalcul = tmp;
+                cl = c1.getClusterId();
+                cr = c2.getClusterId();
+            }
         }
+        m = new Modularity(mCalcul, cl, clusters.get(cl).getNodesList().size(), cr, clusters.get(cr).getNodesList().size());
+        modularities.add(m);
+
     }
 
     public double roundAvoid(double value, int places) {
@@ -200,25 +220,19 @@ public class Graph {
         double firstStep = 0.0;
 
         for (Cluster c : clusters.values()) {
-            firstStep -= (Math.pow(c.getTotalDegree(), 2) / (4 * Math.pow((double) edgesList.size(), 2)));
+            firstStep -= (Math.pow(c.getTotalDegree(), 2) / (4 * Math.pow((double) edge, 2)));
         }
 
         return firstStep;
     }
 
     public Double modularityCalcul(Cluster i, Cluster j) {
-        Double mij;
+        double mij = getClustersEdges(i.getClusterId(), j.getClusterId());
 
-        if (i.getClusterId() == j.getClusterId()) {
-            mij = i.getInternEdges();
-        } else {
-            mij = getClustersEdges(i.getClusterId(), j.getClusterId());
-        }
-
-        double one = mij / ((double) edgesList.size());
-        double two = Math.pow((clusters.get(i.getClusterId()).getTotalDegree() + clusters.get(j.getClusterId()).getTotalDegree()), 2) / (4 * Math.pow((double) edgesList.size(), 2));
-        double three = Math.pow(clusters.get(i.getClusterId()).getTotalDegree(), 2) / (4 * Math.pow((double) edgesList.size(), 2));
-        double four = Math.pow(clusters.get(j.getClusterId()).getTotalDegree(), 2) / (4 * Math.pow((double) edgesList.size(), 2));
+        double one = mij / ((double) edge);
+        double two = Math.pow((clusters.get(i.getClusterId()).getTotalDegree() + clusters.get(j.getClusterId()).getTotalDegree()), 2) / (4 * Math.pow((double) edge, 2));
+        double three = Math.pow(clusters.get(i.getClusterId()).getTotalDegree(), 2) / (4 * Math.pow((double) edge, 2));
+        double four = Math.pow(clusters.get(j.getClusterId()).getTotalDegree(), 2) / (4 * Math.pow((double) edge, 2));
 
         return one - two + three + four;
     }
@@ -237,9 +251,6 @@ public class Graph {
         }
         res.append("\n").append("Edges :\n");
 
-        for (String s : edgesList) {
-            res.append(s).append("\n");
-        }
         return res.toString();
     }
 }
